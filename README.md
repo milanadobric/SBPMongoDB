@@ -330,6 +330,10 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 ```
 
 
+![Uporedno vreme izvršavanja upita](upiti_vremena.png)
+
+
+
 
 
 
