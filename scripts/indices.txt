@@ -1,0 +1,32 @@
+// OffSiteTransferAggregate
+db.OffSiteTransferAggregate.createIndex(
+  { "facility.FacilityId": 1 },
+  { name: "facility.FacilityId_1" }
+);
+
+db.OffSiteTransferAggregate.createIndex(
+  { year: 1 },
+  { name: "year_1" }
+);
+
+// OnSiteReleaseAggregate
+db.OnSiteReleaseAggregate.createIndex(
+  { "facility.FacilityId": 1 },
+  { name: "facility.FacilityId_1" }
+);
+
+db.OnSiteReleaseAggregate.createIndex(
+  { year: 1 },
+  { name: "year_1" }
+);
+
+db.OnSiteReleaseAggregate.createIndex(
+  { year: 1, "facility.Latitude": 1, "facility.Longitude": 1 },
+  { name: "year_1_facility.Latitude_1_facility.Longitude_1" }
+);
+
+// Diseases
+db.Diseases.createIndex(
+  { DiseaseId: 1 },
+  { name: "DiseaseId_1", unique: true }
+);
