@@ -236,44 +236,78 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 **Primer prostiranja:**
 ```json
 {
-  "year": 2023,
-  "facility": {
-    "FacilityId": "F123",
-    "City": "Houston",
-    "State": "TX",
-    "IndustrySector": "Petroleum",
-    "Federal": false,
-    "ParentCompany": {
-      "CompanyId": "C789",
-      "CompanyName": "ExxonMobil"
+  year: 2015,
+  facility: {
+    FacilityId: '00608DCRBNRD3KM',
+    City: 'SALINAS',
+    State: 'PR',
+    Latitude: 17.972778,
+    Longitude: -66.231944,
+    IndustrySector: 'Chemicals',
+    Federal: false,
+    ParentCompany: {
+      CompanyId: null,
+      CompanyName: null
     }
   },
-  "allTransfers": [
+  allTransfers: [
     {
-      "chemical": {
-        "ChemicalId": "CH001",
-        "ChemicalName": "Ammonia",
-        "PFAS": false,
-        "PBT": false,
-        "Carcinogen": false,
-        "UnitOfMeasure": "Pounds",
-        "diseases": ["Asthma"],
-        "transfersForChemical": [
+      chemical: {
+        ChemicalId: '0000100425',
+        ChemicalName: 'Styrene',
+        PFAS: false,
+        PBT: false,
+        Carcinogen: true,
+        UnitOfMeasure: 'Grams',
+        diseases: [
+          41,
+          42,
+          44,
+          52
+        ],
+        transfersForChemical: [
           {
-            "POTWTotalTransfers": 200,
-            "OffSiteReleaseTotal": 150,
-            "OffSiteRecycledTotal": 50,
-            "OffSiteEnergyRecoveryTotal": 0,
-            "OffSiteTreatedTotal": 100,
-            "TotalTransfer": 500,
-            "TotalTreatmentIncludingPOTW": 300
+            POTWTotalTransfers: 0,
+            OffSiteReleaseTotal: 0,
+            OffSiteRecycledTotal: 0,
+            OffSiteEnergyRecoveryTotal: 0,
+            OffSiteTreatedTotal: 0,
+            TotalTransfer: 0,
+            TotalTreatmentIncludingPOTW: 0
           }
         ],
-        "OffSiteReleaseTotalForChemical": 150
+        OffSiteReleaseTotalForChemical: 0
+      }
+    },
+    {
+      chemical: {
+        ChemicalId: 'N982',
+        ChemicalName: 'Zinc compounds',
+        PFAS: false,
+        PBT: false,
+        Carcinogen: false,
+        UnitOfMeasure: 'Grams',
+        diseases: [
+          41,
+          44,
+          52
+],
+        transfersForChemical: [
+          {
+            POTWTotalTransfers: 0,
+            OffSiteReleaseTotal: 3243.1854455,
+            OffSiteRecycledTotal: 0,
+            OffSiteEnergyRecoveryTotal: 0,
+            OffSiteTreatedTotal: 0,
+            TotalTransfer: 3243.1854455,
+            TotalTreatmentIncludingPOTW: 0
+          }
+        ],
+        OffSiteReleaseTotalForChemical: 3243.1854455
       }
     }
   ],
-  "OffSiteReleaseTotalForAllChemicals": 150
+  OffSiteReleaseTotalForAllChemicals: 3243.1854455
 }
 ```
 
@@ -289,40 +323,70 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 **Primer prostiranja:**
 ```json
 {
-  "year": 2023,
-  "facility": {
-    "FacilityId": "F123",
-    "City": "Houston",
-    "State": "TX",
-    "IndustrySector": "Petroleum",
-    "Federal": false,
-    "ParentCompany": {
-      "CompanyId": "C789",
-      "CompanyName": "ExxonMobil"
+  year: 2015,
+  facility: {
+    FacilityId: '27050RJRYN7855A',
+    City: 'TOBACCOVILLE',
+    State: 'NC',
+    Latitude: 36.233605,
+    Longitude: -80.365201,
+    IndustrySector: 'Tobacco',
+    Federal: false,
+    ParentCompany: {
+      CompanyId: '2',
+      CompanyName: 'REYNOLDS AMERICAN INC'
     }
   },
-  "allReleases": [
+  allReleases: [
     {
-      "chemical": {
-        "ChemicalId": "CH001",
-        "ChemicalName": "Ammonia",
-        "PFAS": false,
-        "PBT": false,
-        "Carcinogen": false,
-        "UnitOfMeasure": "Pounds",
-        "diseases": ["Asthma"],
-        "onsiteReleases": {
-          "AirFugitive": 100,
-          "AirStack": 200,
-          "Water": 50,
-          "UndergroundInjection": 0,
-          "Landfills": 20,
-          "OnSiteReleasesTotal": 370
-        }
+      chemical: {
+        ChemicalId: '0007664417',
+        ChemicalName: 'Ammonia',
+        PFAS: false,
+        PBT: false,
+        Carcinogen: false,
+        UnitOfMeasure: 'Grams',
+        diseases: [
+          37,
+          41
+        ],
+        releasesForChemical: [
+          {
+            Air: 4490110.87063,
+            Water: 0,
+            Underground: 0,
+            Landfills: 0,
+            OnSiteReleaseTotal: 4490110.87063,
+            OnSiteTreatmentTotal: 0
+          }
+        ],
+        OnSiteReleaseTotalForChemical: 4490110.87063
+      }
+    },
+    {
+      chemical: {
+        ChemicalId: 'N503',
+        ChemicalName: 'Nicotine and salts',
+        PFAS: false,
+        PBT: false,
+        Carcinogen: false,
+        UnitOfMeasure: 'Grams',
+        diseases: [],
+        releasesForChemical: [
+          {
+            Air: 6289058.21005,
+            Water: 0,
+            Underground: 0,
+            Landfills: 0,
+            OnSiteReleaseTotal: 6289058.21005,
+            OnSiteTreatmentTotal: 0
+          }
+        ],
+        OnSiteReleaseTotalForChemical: 6289058.21005
       }
     }
   ],
-  "OnSiteReleaseTotalForAllChemicals": 370
+  OnSiteReleaseTotalForAllChemicals: 10779169.08068
 }
 ```
 
