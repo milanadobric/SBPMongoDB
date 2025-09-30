@@ -1,0 +1,889 @@
+Upit 1 TOP 10 postrojenja po release(execution 4min 50s):
+const YEAR = 2020;
+const STATE = "TX";
+
+db.OnSiteRelease.aggregate([
+  { $match: { Year: YEAR } },
+
+  { $group: {
+      _id: "$FacilityId",
+      totalRelease: {
+        $sum: { $convert: { input: "$OnSiteReleaseTotal", to: "double", onError: 0, onNull: 0 } }
+      }
+  }},
+
+  { $lookup: {
+      from: "Facilities",
+      let: { fid: "$_id" },
+      pipeline: [
+        { $match: { State: STATE } },
+        { $match: { $expr: { $eq: [ "$FacilityId", "$$fid" ] } } }
+      ],
+      as: "facility"
+  }},
+  { $unwind: "$facility" },
+
+  { $sort: { totalRelease: -1 } },
+  { $limit: 10 },
+
+  { $lookup: {
+      from: "Companies",
+      localField: "facility.ParentCompanyId",
+      foreignField: "CompanyId",
+      as: "company"
+  }},
+  { $unwind: { path: "$company", preserveNullAndEmptyArrays: true } },
+
+  { $project: {
+      _id: 0,
+      FacilityId: "$_id",
+      TotalRelease: "$totalRelease",
+      FacilityName: "$facility.FacilityName",
+      City: "$facility.City",
+      State: "$facility.State",
+      IndustrySector: "$facility.IndustrySector",
+      Company: "$company.CompanyName"
+  }}
+]);
+
+
+Upit 2 Top 3 kompanije po medijumu i ukupno ispuštanje po tom medijumu za datu godinu (execution ~3min 20s):
+const YEAR = 2024;787
+
+db.OnSiteRelease.aggregate([
+  { $match: { Year: YEAR } },
+
+  { $group: {
+      _id: "$FacilityId",
+      TotalAir: { $sum: "$Air" },
+      TotalWater: { $sum: "$Water" },
+      TotalLand: { $sum: { $add: ["$Landfills", "$Underground"] } }
+  }},
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "_id",
+      foreignField: "FacilityId",
+      as: "facility"
+  }},
+  { $unwind: "$facility" },
+
+  { $group: {
+      _id: "$facility.ParentCompanyId",
+      TotalAir: { $sum: "$TotalAir" },
+      TotalWater: { $sum: "$TotalWater" },
+      TotalLand: { $sum: "$TotalLand" }
+  }},
+
+  { $lookup: {
+      from: "Companies",
+      localField: "_id",
+      foreignField: "CompanyId",
+      as: "company"
+  }},
+  { $unwind: "$company" },
+
+  { $group: {
+      _id: null,
+      companies: { $push: "$$ROOT" },
+      TotalAirAll: { $sum: "$TotalAir" },
+      TotalWaterAll: { $sum: "$TotalWater" },
+      TotalLandAll: { $sum: "$TotalLand" }
+  }},
+
+  { $project: {
+      TotalAirAll: 1,
+      TotalWaterAll: 1,
+      TotalLandAll: 1,
+      AirTop3: {
+        $map: {
+          input: { $slice: [ { $sortArray: { input: "$companies", sortBy: { TotalAir: -1 } } }, 3 ] },
+          as: "c",
+          in: {
+            CompanyName: "$$c.company.CompanyName",
+            TotalAir: "$$c.TotalAir",
+            Percent: { $multiply: [ { $divide: ["$$c.TotalAir", "$TotalAirAll"] }, 100 ] }
+          }
+        }
+      },
+      WaterTop3: {
+        $map: {
+          input: { $slice: [ { $sortArray: { input: "$companies", sortBy: { TotalWater: -1 } } }, 3 ] },
+          as: "c",
+          in: {
+            CompanyName: "$$c.company.CompanyName",
+            TotalWater: "$$c.TotalWater",
+            Percent: { $multiply: [ { $divide: ["$$c.TotalWater", "$TotalWaterAll"] }, 100 ] }
+          }
+        }
+      },
+      LandTop3: {
+        $map: {
+          input: { $slice: [ { $sortArray: { input: "$companies", sortBy: { TotalLand: -1 } } }, 3 ] },
+          as: "c",
+          in: {
+            CompanyName: "$$c.company.CompanyName",
+            TotalLand: "$$c.TotalLand",
+            Percent: { $multiply: [ { $divide: ["$$c.TotalLand", "$TotalLandAll"] }, 100 ] }
+          }
+        }
+      }
+  }}
+]);
+
+
+
+Upit 3 Waste management u nekoj godini, prikaz ukupnog recycle, energy, treatment, disposal, a posle prikazati
+top 3 industrije koje su najvise uticaja imale u svakom sektoru (execution ~18min):
+
+db.OffSiteTransfer.aggregate([
+  { $match: { Year: YEAR } },
+
+  {
+    $group: {
+      _id: "$FacilityId",
+      recycle: { $sum: "$OffSiteRecycledTotal" },
+      energy: { $sum: "$OffSiteEnergyRecoveryTotal" },
+      treatment: { $sum: { $add: ["$OffSiteTreatedTotal", "$POTWTotalTransfers"] } },
+      disposal: { $sum: "$OffSiteReleaseTotal" }
+    }
+  },
+
+  {
+    $lookup: {
+      from: "Facilities",
+      let: { fid: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$FacilityId", "$$fid"] } } },
+        { $project: { IndustrySector: 1, _id: 0 } }
+      ],
+      as: "facility"
+    }
+  },
+  { $unwind: "$facility" },
+
+
+  {
+    $group: {
+      _id: "$facility.IndustrySector",
+      totalRecycle: { $sum: "$recycle" },
+      totalEnergy: { $sum: "$energy" },
+      totalTreatment: { $sum: "$treatment" },
+      totalDisposal: { $sum: "$disposal" }
+    }
+  },
+
+  {
+    $group: {
+      _id: null,
+      sectors: { $push: "$$ROOT" },
+      totalRecycle: { $sum: "$totalRecycle" },
+      totalEnergy: { $sum: "$totalEnergy" },
+      totalTreatment: { $sum: "$totalTreatment" },
+      totalDisposal: { $sum: "$totalDisposal" }
+    }
+  },
+
+  {
+    $project: {
+      _id: 0,
+      TotalAmounts: {
+        Recycle: "$totalRecycle",
+        Energy: "$totalEnergy",
+        Treatment: "$totalTreatment",
+        Disposal: "$totalDisposal"
+      },
+
+      RecycleTop3: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$sectors", sortBy: { totalRecycle: -1 } } }, 3] },
+          as: "s",
+          in: {
+            Sector: "$$s._id",
+            Amount: "$$s.totalRecycle",
+            Percent: {
+              $cond: [{ $eq: ["$totalRecycle", 0] }, 0, { $multiply: [{ $divide: ["$$s.totalRecycle", "$totalRecycle"] }, 100] }]
+            }
+          }
+        }
+      },
+
+      EnergyTop3: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$sectors", sortBy: { totalEnergy: -1 } } }, 3] },
+          as: "s",
+          in: {
+            Sector: "$$s._id",
+            Amount: "$$s.totalEnergy",
+            Percent: {
+              $cond: [{ $eq: ["$totalEnergy", 0] }, 0, { $multiply: [{ $divide: ["$$s.totalEnergy", "$totalEnergy"] }, 100] }]
+            }
+          }
+        }
+      },
+
+      TreatmentTop3: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$sectors", sortBy: { totalTreatment: -1 } } }, 3] },
+          as: "s",
+          in: {
+            Sector: "$$s._id",
+            Amount: "$$s.totalTreatment",
+            Percent: {
+              $cond: [{ $eq: ["$totalTreatment", 0] }, 0, { $multiply: [{ $divide: ["$$s.totalTreatment", "$totalTreatment"] }, 100] }]
+            }
+          }
+        }
+      },
+
+      DisposalTop3: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$sectors", sortBy: { totalDisposal: -1 } } }, 3] },
+          as: "s",
+          in: {
+            Sector: "$$s._id",
+            Amount: "$$s.totalDisposal",
+            Percent: {
+              $cond: [{ $eq: ["$totalDisposal", 0] }, 0, { $multiply: [{ $divide: ["$$s.totalDisposal", "$totalDisposal"] }, 100] }]
+            }
+          }
+        }
+      }
+    }
+  }
+]);
+
+
+
+Upit 4 Prikazati za neku godinu u odredjenim geografskim koordianatama ukupno ispustanje hemikalija
+u 3 medijuma (voda, vazduh, zemlja) i za svaki medijum prikazati 10 hemikalija koje se najvise
+ispustaju (exectution ~13min):
+
+const YEAR = 2023;
+
+const minLat = 44.0;
+const maxLat = 45.0;
+const minLng = 19.0;
+const maxLng = 20.0;
+
+db.OnSiteRelease.aggregate([
+  { $match: { Year: YEAR } },
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "FacilityId",
+      foreignField: "FacilityId",
+      as: "facility"
+  }},
+  { $unwind: "$facility" },
+  { $match: {
+      "facility.Latitude": { $gte: minLat, $lte: maxLat },
+      "facility.Longitude": { $gte: minLng, $lte: maxLng }
+  }},
+
+  {
+    $group: {
+      _id: "$ChemicalId",
+      totalAir: { $sum: "$Air" },
+      totalWater: { $sum: "$Water" },
+      totalLand: { $sum: { $add: ["$Landfills", "$Underground"] } }
+    }
+  },
+
+  {
+    $lookup: {
+      from: "Chemicals",
+      localField: "_id",
+      foreignField: "ChemicalId",
+      as: "chemical"
+    }
+  },
+  { $unwind: "$chemical" },
+
+  {
+    $group: {
+      _id: null,
+      chemicals: {
+        $push: {
+          ChemicalId: "$_id",
+          ChemicalName: "$chemical.ChemicalName",
+          totalAir: "$totalAir",
+          totalWater: "$totalWater",
+          totalLand: "$totalLand"
+        }
+      },
+      totalAir: { $sum: "$totalAir" },
+      totalWater: { $sum: "$totalWater" },
+      totalLand: { $sum: "$totalLand" }
+    }
+  },
+
+  {
+    $project: {
+      _id: 0,
+      totalAir: 1,
+      totalWater: 1,
+      totalLand: 1,
+      TopAir: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$chemicals", sortBy: { totalAir: -1 } } }, 10] },
+          as: "c",
+          in: {
+            ChemicalId: "$$c.ChemicalId",
+            ChemicalName: "$$c.ChemicalName",
+            Amount: "$$c.totalAir",
+            Percent: { $cond: [{ $eq: ["$totalAir", 0] }, 0, { $multiply: [{ $divide: ["$$c.totalAir", "$totalAir"] }, 100] }] }
+          }
+        }
+      },
+      TopWater: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$chemicals", sortBy: { totalWater: -1 } } }, 10] },
+          as: "c",
+          in: {
+            ChemicalId: "$$c.ChemicalId",
+            ChemicalName: "$$c.ChemicalName",
+            Amount: "$$c.totalWater",
+            Percent: { $cond: [{ $eq: ["$totalWater", 0] }, 0, { $multiply: [{ $divide: ["$$c.totalWater", "$totalWater"] }, 100] }] }
+          }
+        }
+      },
+      TopLand: {
+        $map: {
+          input: { $slice: [{ $sortArray: { input: "$chemicals", sortBy: { totalLand: -1 } } }, 10] },
+          as: "c",
+          in: {
+            ChemicalId: "$$c.ChemicalId",
+            ChemicalName: "$$c.ChemicalName",
+            Amount: "$$c.totalLand",
+            Percent: { $cond: [{ $eq: ["$totalLand", 0] }, 0, { $multiply: [{ $divide: ["$$c.totalLand", "$totalLand"] }, 100] }] }
+          }
+        }
+      }
+    }
+  }
+]);
+
+
+
+
+Upit 5  ~7.5s:
+
+const YEAR = 2024;
+const MEDIUM = "Water";
+const TOP_CHEMICALS = 10;
+const TOP_DISEASES = 10;
+
+db.OnSiteRelease.aggregate([
+  { $match: { Year: YEAR } },
+
+  { $group: {
+      _id: "$ChemicalId",
+      TotalRelease: { $sum: `$${MEDIUM}` }
+  }},
+
+  { $sort: { TotalRelease: -1 } },
+  { $limit: TOP_CHEMICALS },
+
+  { $lookup: {
+      from: "Chemicals",
+      localField: "_id",
+      foreignField: "ChemicalId",
+      as: "chemical"
+  }},
+  { $unwind: "$chemical" },
+
+  { $facet: {
+      TopChemicals: [
+        { $project: { _id: 0, ChemicalName: "$chemical.ChemicalName", TotalRelease: 1 } }
+      ],
+      TopDiseases: [
+        { $unwind: "$chemical.Diseases" },
+        { $lookup: {
+            from: "Diseases",
+            localField: "chemical.Diseases",
+            foreignField: "DiseaseId",
+            as: "diseaseInfo"
+        }},
+        { $unwind: "$diseaseInfo" },
+        { $group: { _id: "$diseaseInfo.DiseaseName", Count: { $sum: 1 } } },
+        { $sort: { Count: -1 } },
+        { $limit: TOP_DISEASES },
+        { $project: { _id: 0, DiseaseName: "$_id", Count: 1 } }
+      ]
+  }},
+
+  { $addFields: { Year: YEAR, Medium: MEDIUM } }
+ 
+]);
+
+
+6. // 6 MINUTA
+// #6 Top 10 postrojenja po emisiji PBT / Carcinogen / PFAS hemikalija (sve u gramima)
+db.OnsiteRelease.aggregate([
+
+  // { $match: { Year: 2015 } },
+
+
+  { $project: {
+      FacilityId: 1,
+      ChemicalId: 1,
+      releases: { $ifNull: ["$OnSiteReleaseTotal", 0] }
+  }},
+
+
+  { $unionWith: {
+      coll: "OffsiteTransfer",
+      pipeline: [
+        // { $match: { Year: 2015 } },
+        { $project: {
+            FacilityId: 1,
+            ChemicalId: 1,
+            releases: { $ifNull: ["$OffSiteReleaseTotal", 0] }
+        }}
+      ]
+  }},
+
+
+  { $group: {
+      _id: { FacilityId: "$FacilityId", ChemicalId: "$ChemicalId" },
+      sumReleases: { $sum: "$releases" }
+  }},
+
+
+  { $lookup: {
+      from: "Chemicals",
+      localField: "_id.ChemicalId",
+      foreignField: "ChemicalId",
+      as: "chem"
+  }},
+  { $unwind: "$chem" },
+
+  { $set: {
+      PFAS: { $toUpper: { $ifNull: ["$chem.PFAS", "NO"] } },
+      PBT: { $toUpper: { $ifNull: ["$chem.PBT", "NO"] } },
+      CARC: { $toUpper: { $ifNull: ["$chem.Carcinogen", "NO"] } }
+  }},
+  { $match: {
+      $or: [ { PFAS: "YES" }, { PBT: "YES" }, { CARC: "YES" } ]
+  }},
+
+
+  { $group: {
+      _id: "$_id.FacilityId",
+      totalReleasesGrams: { $sum: "$sumReleases" }
+  }},
+
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "_id",
+      foreignField: "FacilityId",
+      as: "fac"
+  }},
+  { $unwind: "$fac" },
+
+
+  { $lookup: {
+      from: "Companies",
+      localField: "fac.ParentCompanyId",
+      foreignField: "CompanyId",
+      as: "comp"
+  }},
+  { $unwind: { path: "$comp", preserveNullAndEmptyArrays: true } },
+
+  { $project: {
+      _id: 0,
+      FacilityId: "$_id",
+      FacilityName: "$fac.FacilityName",
+      City: "$fac.City",
+      State: "$fac.State",
+      IndustrySector: "$fac.IndustrySector",
+      ParentCompany: {
+        $ifNull: ["$comp.StandardCompanyName", { $ifNull: ["$comp.CompanyName", null] }]
+      },
+      totalReleasesGrams: { $round: ["$totalReleasesGrams", 3] }
+  }},
+
+  { $sort: { totalReleasesGrams: -1 } },
+  { $limit: 10 }
+]);
+
+
+7. //10MINUTA
+// #7 Federal vs Non-Federal: Total Releases po sektoru + sažeci po grupi
+db.OnSiteRelease.aggregate([
+
+  // { $match: { Year: 2015 } },
+
+
+  { $project: { FacilityId: 1, releases: { $ifNull: ["$OnSiteReleaseTotal", 0] } } },
+
+  { $unionWith: {
+      coll: "OffSiteTransfer",
+      pipeline: [
+        // { $match: { Year: 2015 } }, 
+        { $project: { FacilityId: 1, releases: { $ifNull: ["$OffSiteReleaseTotal", 0] } } }
+      ]
+  }},
+
+  { $group: { _id: "$FacilityId", totalReleases: { $sum: "$releases" } } },
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "_id",
+      foreignField: "FacilityId",
+      as: "fac"
+  }},
+  { $unwind: "$fac" },
+
+  { $set: {
+      federal: { $eq: [ { $toUpper: "$fac.FederalFacility" }, "YES" ] },
+      sector:  { $ifNull: [ "$fac.IndustrySector", "Unknown" ] }
+  }},
+
+  { $group: {
+      _id: { federal: "$federal", sector: "$sector" },
+      totalReleases:   { $sum: "$totalReleases" },
+      facilityCount:   { $sum: 1 }
+  }},
+  { $set: {
+      avgPerFacility: {
+        $cond: [ { $gt: [ "$facilityCount", 0 ] },
+                 { $divide: [ "$totalReleases", "$facilityCount" ] },
+                 0 ]
+      }
+  }},
+
+
+  { $sort: { "_id.federal": -1, totalReleases: -1 } },
+
+  { $group: {
+      _id: "$_id.federal",
+      groupTotalReleases: { $sum: "$totalReleases" },
+      groupFacilityCount: { $sum: "$facilityCount" },
+      bySector: { $push: {
+        sector: "$_id.sector",
+        totalReleases: "$totalReleases",
+        facilityCount: "$facilityCount",
+        avgPerFacility: "$avgPerFacility"
+      }},
+      dominantSector: { $first: {
+        sector: "$_id.sector",
+        totalReleases: "$totalReleases"
+      }}
+  }},
+
+  { $set: {
+      groupAvgPerFacility: {
+        $cond: [ { $gt: [ "$groupFacilityCount", 0 ] },
+                 { $divide: [ "$groupTotalReleases", "$groupFacilityCount" ] },
+                 0 ]
+      }
+  }},
+
+  { $project: {
+      _id: 0,
+      federalGroup: { $cond: [ "$_id", "Federal", "Non-Federal" ] },
+      totals: {
+        totalReleases: "$groupTotalReleases",
+        avgPerFacility: "$groupAvgPerFacility",
+        facilityCount: "$groupFacilityCount"
+      },
+      dominantSector: "$dominantSector",
+      bySector: 1
+  }},
+
+  { $sort: { federalGroup: 1 } }
+]);
+
+
+UPIT 8 (execution ):
+8. Udeo reciklaže u ukupnom upravljanju otpadom po hemikaliji
+
+Za odabranu godinu potrebno je izračunati udeo otpada koji je završio u off-site reciklaži u odnosu na ukupnu količinu upravljanog otpada za svaku hemikaliju.
+
+db.OffSiteTransfer.aggregate([
+
+  // { $match: { Year: 2015 } },
+
+
+  { $project: {
+      ChemicalId: 1,
+      FacilityId: 1,
+      rec_g:  { $ifNull: ["$OffSiteRecycledTotal", 0] },
+      en_g:   { $ifNull: ["$OffSiteEnergyRecoveryTotal", 0] },
+      tr_g:   { $ifNull: ["$OffSiteTreatedTotal", 0] },
+      rel_g:  { $ifNull: ["$OffSiteReleaseTotal", 0] },
+      potw_g: { $ifNull: ["$POTWTotalTransfers", 0] }
+  }},
+
+lnost
+  { $group: {
+      _id: { ChemicalId: "$ChemicalId", FacilityId: "$FacilityId" },
+      recycled_g: { $sum: "$rec_g" },
+      totalWaste_g: { $sum: { $add: ["$rec_g","$en_g","$tr_g","$rel_g","$potw_g"] } }
+  }},
+
+  { $facet: {
+      perChem: [
+        { $group: {
+            _id: "$_id.ChemicalId",
+            totalRecycled_g: { $sum: "$recycled_g" },
+            totalWaste_g:    { $sum: "$totalWaste_g" },
+            facilityCount:   { $sum: 1 }
+        }},
+        { $set: {
+            recycleSharePct: {
+              $cond: [
+                { $gt: ["$totalWaste_g", 0] },
+                { $multiply: [ { $divide: ["$totalRecycled_g", "$totalWaste_g"] }, 100 ] },
+                0
+              ]
+            },
+            avgWastePerFacility_g: {
+              $cond: [
+                { $gt: ["$facilityCount", 0] },
+                { $divide: ["$totalWaste_g", "$facilityCount"] },
+                0
+              ]
+            }
+        }},
+
+        { $lookup: {
+            from: "Chemicals",
+            localField: "_id",
+            foreignField: "ChemicalId",
+            as: "chem"
+        }},
+        { $unwind: "$chem" },
+        { $project: {
+            _id: 0,
+            ChemicalId: "$_id",
+            ChemicalName: "$chem.ChemicalName",
+            totalWasteGrams:    { $round: ["$totalWaste_g", 3] },
+            totalRecycledGrams: { $round: ["$totalRecycled_g", 3] },
+            recycleSharePct:    { $round: ["$recycleSharePct", 2] },
+            facilityCount: 1,
+            avgWastePerFacilityGrams: { $round: ["$avgWastePerFacility_g", 3] }
+        }}
+      ],
+      topFac: [
+
+        { $sort: { "_id.ChemicalId": 1, recycled_g: -1 } },
+        { $group: {
+            _id: "$_id.ChemicalId",
+            topFacilityId: { $first: "$_id.FacilityId" },
+            topRecycled_g: { $first: "$recycled_g" }
+        }},
+
+        { $lookup: {
+            from: "Facilities",
+            localField: "topFacilityId",
+            foreignField: "FacilityId",
+            as: "fac"
+        }},
+        { $unwind: "$fac" },
+        { $project: {
+            _id: 0,
+            ChemicalId: "$_id",
+            DominantFacility: {
+              FacilityId: "$topFacilityId",
+              FacilityName: "$fac.FacilityName",
+              IndustrySectorApprox: "$fac.IndustrySector",
+              RecycledGramsAtTopFacility: { $round: ["$topRecycled_g", 3] }
+            }
+        }}
+      ]
+  }},
+
+
+  { $project: {
+      merged: {
+        $map: {
+          input: "$perChem",
+          as: "pc",
+          in: {
+            $mergeObjects: [
+              "$$pc",
+              {
+                $ifNull: [
+                  {
+                    $first: {
+                      $filter: {
+                        input: "$topFac",
+                        as: "tf",
+                        cond: { $eq: ["$$tf.ChemicalId", "$$pc.ChemicalId"] }
+                      }
+                    }
+                  },
+                  {}
+                ]
+              }
+            ]
+          }
+        }
+      }
+  }},
+
+  { $unwind: "$merged" },
+  { $replaceRoot: { newRoot: "$merged" } },
+
+  { $facet: {
+      top10: [
+        { $sort: { recycleSharePct: -1, totalWasteGrams: -1 } },
+        { $limit: 10 }
+      ],
+      bottom10: [
+        { $sort: { recycleSharePct: 1, totalWasteGrams: -1 } },
+        { $limit: 10 }
+      ]
+  }}
+]);
+
+
+//9.  6.5MINUTA
+// #9 Trend emisija hemikalije kroz vreme i sektore
+db.OnsiteRelease.aggregate([
+
+  { $lookup: {
+      from: "Chemicals",
+      localField: "ChemicalId",
+      foreignField: "ChemicalId",
+      as: "chem"
+  }},
+  { $unwind: "$chem" },
+  { $match: {
+      "chem.ChemicalName": "Ammonia",  
+      Year: { $gte: 2020, $lte: 2024 }
+  }},
+
+  { $project: {
+      FacilityId: 1,
+      Year: 1,
+      ChemicalId: 1,
+      releases: { $ifNull: ["$OnSiteReleaseTotal", 0] }
+  }},
+
+
+  { $unionWith: {
+      coll: "OffsiteTransfer",
+      pipeline: [
+        { $lookup: {
+            from: "Chemicals",
+            localField: "ChemicalId",
+            foreignField: "ChemicalId",
+            as: "chem"
+        }},
+        { $unwind: "$chem" },
+        { $match: {
+            "chem.ChemicalName": "Ammonia",  
+            Year: { $gte: 2020, $lte: 2024 }
+        }},
+        { $project: {
+            FacilityId: 1,
+            Year: 1,
+            ChemicalId: 1,
+            releases: { $ifNull: ["$OffSiteReleaseTotal", 0] }
+        }}
+      ]
+  }},
+
+
+  { $group: {
+      _id: { FacilityId: "$FacilityId", Year: "$Year" },
+      totalReleases: { $sum: "$releases" }
+  }},
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "_id.FacilityId",
+      foreignField: "FacilityId",
+      as: "fac"
+  }},
+  { $unwind: "$fac" },
+
+  { $group: {
+      _id: { Year: "$_id.Year", Sector: "$fac.IndustrySector" },
+      totalReleases: { $sum: "$totalReleases" },
+      facilityCount: { $sum: 1 }
+  }},
+
+  { $project: {
+      _id: 0,
+      Year: "$_id.Year",
+      IndustrySector: "$_id.Sector",
+      totalReleasesGrams: { $round: ["$totalReleases", 3] },
+      facilityCount: 1
+  }},
+
+  { $sort: { Year: 1, totalReleasesGrams: -1 } }
+]);
+
+
+
+
+UPIT 10 (execution 3min 30sekundi):
+const YEAR = 2015
+db.OnSiteRelease.aggregate([
+
+  { $match: { Year: YEAR } },
+
+
+  { $project: { FacilityId: 1, releases: { $ifNull: ["$OnSiteReleaseTotal", 0] } } },
+  { $group: { _id: "$FacilityId", totalOnsite: { $sum: "$releases" } } },
+
+  { $unionWith: {
+      coll: "OffSiteTransfer",
+      pipeline: [
+        { $match: { Year: YEAR } },
+        { $project: { FacilityId: 1, releases: { $ifNull: ["$OffSiteReleaseTotal", 0] } } },
+        { $group: { _id: "$FacilityId", totalOnsite: { $sum: "$releases" } } } 
+      ]
+  }},
+
+
+  { $group: { _id: "$_id", totalReleases: { $sum: "$totalOnsite" } } },
+
+
+  { $lookup: {
+      from: "Facilities",
+      localField: "_id",
+      foreignField: "FacilityId",
+      as: "fac"
+  }},
+  { $unwind: "$fac" },
+
+
+  { $sort: { "fac.City": 1, totalReleases: -1 } },
+
+  { $group: {
+      _id: "$fac.City",
+      totalReleases: { $sum: "$totalReleases" },
+      facilityCount: { $sum: 1 },
+      dominantSector: { $first: "$fac.IndustrySector" } 
+  }},
+  { $set: {
+      avgPerFacility: {
+        $cond: [
+          { $gt: ["$facilityCount", 0] },
+          { $divide: ["$totalReleases", "$facilityCount"] },
+          0
+        ]
+      }
+  }},
+
+
+  { $project: {
+      _id: 0,
+      City: "$_id",
+      totalReleasesGrams: { $round: ["$totalReleases", 3] },
+      facilityCount: 1,
+      avgPerFacilityGrams: { $round: ["$avgPerFacility", 3] },
+      dominantSector: 1
+  }},
+
+
+  { $sort: { totalReleasesGrams: -1 } }
+  ,{ $limit: 10 }
+]);
