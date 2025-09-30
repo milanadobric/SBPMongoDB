@@ -1,6 +1,3 @@
-# SBPMongoDB
-
-
 # Vodič kroz skup podataka
 
 ## Tema
