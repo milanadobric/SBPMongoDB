@@ -236,79 +236,80 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 **Primer prostiranja:**
 ```json
 {
-  year: 2015,
-  facility: {
-    FacilityId: '00608DCRBNRD3KM',
-    City: 'SALINAS',
-    State: 'PR',
-    Latitude: 17.972778,
-    Longitude: -66.231944,
-    IndustrySector: 'Chemicals',
-    Federal: false,
-    ParentCompany: {
-      CompanyId: null,
-      CompanyName: null
+  "year": 2015,
+  "facility": {
+    "FacilityId": "00608DCRBNRD3KM",
+    "City": "SALINAS",
+    "State": "PR",
+    "Latitude": 17.972778,
+    "Longitude": -66.231944,
+    "IndustrySector": "Chemicals",
+    "Federal": false,
+    "ParentCompany": {
+      "CompanyId": null,
+      "CompanyName": null
     }
   },
-  allTransfers: [
+  "allTransfers": [
     {
-      chemical: {
-        ChemicalId: '0000100425',
-        ChemicalName: 'Styrene',
-        PFAS: false,
-        PBT: false,
-        Carcinogen: true,
-        UnitOfMeasure: 'Grams',
-        diseases: [
+      "chemical": {
+        "ChemicalId": "0000100425",
+        "ChemicalName": "Styrene",
+        "PFAS": false,
+        "PBT": false,
+        "Carcinogen": true,
+        "UnitOfMeasure": "Grams",
+        "diseases": [
           41,
           42,
           44,
           52
         ],
-        transfersForChemical: [
+        "transfersForChemical": [
           {
-            POTWTotalTransfers: 0,
-            OffSiteReleaseTotal: 0,
-            OffSiteRecycledTotal: 0,
-            OffSiteEnergyRecoveryTotal: 0,
-            OffSiteTreatedTotal: 0,
-            TotalTransfer: 0,
-            TotalTreatmentIncludingPOTW: 0
+            "POTWTotalTransfers": 0,
+            "OffSiteReleaseTotal": 0,
+            "OffSiteRecycledTotal": 0,
+            "OffSiteEnergyRecoveryTotal": 0,
+            "OffSiteTreatedTotal": 0,
+            "TotalTransfer": 0,
+            "TotalTreatmentIncludingPOTW": 0
           }
         ],
-        OffSiteReleaseTotalForChemical: 0
+        "OffSiteReleaseTotalForChemical": 0
       }
     },
     {
-      chemical: {
-        ChemicalId: 'N982',
-        ChemicalName: 'Zinc compounds',
-        PFAS: false,
-        PBT: false,
-        Carcinogen: false,
-        UnitOfMeasure: 'Grams',
-        diseases: [
+      "chemical": {
+        "ChemicalId": "N982",
+        "ChemicalName": "Zinc compounds",
+        "PFAS": false,
+        "PBT": false,
+        "Carcinogen": false,
+        "UnitOfMeasure": "Grams",
+        "diseases": [
           41,
           44,
           52
-],
-        transfersForChemical: [
+        ],
+        "transfersForChemical": [
           {
-            POTWTotalTransfers: 0,
-            OffSiteReleaseTotal: 3243.1854455,
-            OffSiteRecycledTotal: 0,
-            OffSiteEnergyRecoveryTotal: 0,
-            OffSiteTreatedTotal: 0,
-            TotalTransfer: 3243.1854455,
-            TotalTreatmentIncludingPOTW: 0
+            "POTWTotalTransfers": 0,
+            "OffSiteReleaseTotal": 3243.1854455,
+            "OffSiteRecycledTotal": 0,
+            "OffSiteEnergyRecoveryTotal": 0,
+            "OffSiteTreatedTotal": 0,
+            "TotalTransfer": 3243.1854455,
+            "TotalTreatmentIncludingPOTW": 0
           }
         ],
-        OffSiteReleaseTotalForChemical: 3243.1854455
+        "OffSiteReleaseTotalForChemical": 3243.1854455
       }
     }
   ],
-  OffSiteReleaseTotalForAllChemicals: 3243.1854455
+  "OffSiteReleaseTotalForAllChemicals": 3243.1854455
 }
+
 ```
 
 
@@ -323,70 +324,70 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 **Primer prostiranja:**
 ```json
 {
-  year: 2015,
-  facility: {
-    FacilityId: '27050RJRYN7855A',
-    City: 'TOBACCOVILLE',
-    State: 'NC',
-    Latitude: 36.233605,
-    Longitude: -80.365201,
-    IndustrySector: 'Tobacco',
-    Federal: false,
-    ParentCompany: {
-      CompanyId: '2',
-      CompanyName: 'REYNOLDS AMERICAN INC'
+  "year": 2015,
+  "facility": {
+    "FacilityId": "27050RJRYN7855A",
+    "City": "TOBACCOVILLE",
+    "State": "NC",
+    "Latitude": 36.233605,
+    "Longitude": -80.365201,
+    "IndustrySector": "Tobacco",
+    "Federal": false,
+    "ParentCompany": {
+      "CompanyId": "2",
+      "CompanyName": "REYNOLDS AMERICAN INC"
     }
   },
-  allReleases: [
+  "allReleases": [
     {
-      chemical: {
-        ChemicalId: '0007664417',
-        ChemicalName: 'Ammonia',
-        PFAS: false,
-        PBT: false,
-        Carcinogen: false,
-        UnitOfMeasure: 'Grams',
-        diseases: [
+      "chemical": {
+        "ChemicalId": "0007664417",
+        "ChemicalName": "Ammonia",
+        "PFAS": false,
+        "PBT": false,
+        "Carcinogen": false,
+        "UnitOfMeasure": "Grams",
+        "diseases": [
           37,
           41
         ],
-        releasesForChemical: [
+        "releasesForChemical": [
           {
-            Air: 4490110.87063,
-            Water: 0,
-            Underground: 0,
-            Landfills: 0,
-            OnSiteReleaseTotal: 4490110.87063,
-            OnSiteTreatmentTotal: 0
+            "Air": 4490110.87063,
+            "Water": 0,
+            "Underground": 0,
+            "Landfills": 0,
+            "OnSiteReleaseTotal": 4490110.87063,
+            "OnSiteTreatmentTotal": 0
           }
         ],
-        OnSiteReleaseTotalForChemical: 4490110.87063
+        "OnSiteReleaseTotalForChemical": 4490110.87063
       }
     },
     {
-      chemical: {
-        ChemicalId: 'N503',
-        ChemicalName: 'Nicotine and salts',
-        PFAS: false,
-        PBT: false,
-        Carcinogen: false,
-        UnitOfMeasure: 'Grams',
-        diseases: [],
-        releasesForChemical: [
+      "chemical": {
+        "ChemicalId": "N503",
+        "ChemicalName": "Nicotine and salts",
+        "PFAS": false,
+        "PBT": false,
+        "Carcinogen": false,
+        "UnitOfMeasure": "Grams",
+        "diseases": [],
+        "releasesForChemical": [
           {
-            Air: 6289058.21005,
-            Water: 0,
-            Underground: 0,
-            Landfills: 0,
-            OnSiteReleaseTotal: 6289058.21005,
-            OnSiteTreatmentTotal: 0
+            "Air": 6289058.21005,
+            "Water": 0,
+            "Underground": 0,
+            "Landfills": 0,
+            "OnSiteReleaseTotal": 6289058.21005,
+            "OnSiteTreatmentTotal": 0
           }
         ],
-        OnSiteReleaseTotalForChemical: 6289058.21005
+        "OnSiteReleaseTotalForChemical": 6289058.21005
       }
     }
   ],
-  OnSiteReleaseTotalForAllChemicals: 10779169.08068
+  "OnSiteReleaseTotalForAllChemicals": 10779169.08068
 }
 ```
 
