@@ -15,8 +15,42 @@ Svaki zapis u bazi je **Godina × Postrojenje × Hemikalija** i obuhvata:
 -  Ukupno različitih hemikalija: **~600** 
 - Savezne države/teritorije: **50** 
 - Postrojenja: **25573** 
-- Kompanija: **4860** 
+- Kompanija: **4860**
 
+---
+
+## 📊 Prikupljanje i priprema podataka
+Podaci su prikupljeni sa **zvaničnog EPA TRI sajta** putem **web scraping-a**.  
+- Za svaku godinu (2015–2024) preuzet je zaseban CSV fajl sa prijavljenim emisijama i transferima.  
+- Nakon preuzimanja, svi fajlovi su transformisani i objedinjeni u **jedan veliki integrisani CSV**, čime je obezbeđena konzistentnost i omogućena analiza trenda kroz ceo period.  
+- Pored emisija, sa istog izvora dodatno su **skrejpovani i podaci o bolestima** povezanih sa hemikalijama. Na taj način skup je proširen i nadograđen informacijama koje povezuju hemikalije sa zdravstvenim ishodima, čineći ga pogodnijim za interdisciplinarne analize.  
+
+---
+
+## 🏗️ Dizajn šeme i korišćeni šabloni
+Rekonstrukcija šeme vođena je principom **aplikacijom vođene šeme** (*Application Driven Schema*), sa ciljem da se struktura optimizuje za najčešće obrasce upita.  
+
+Korišćeni šabloni:  
+- **Proširena referenca (Extended Reference)** – izbegnuta su česta spajanja dokumenata tako što su osnovni podaci (npr. ime postrojenja, lokacija, kompanija) uvučeni u referencu. Time je postignuta bolja efikasnost bez prevelike redundanse.  
+- **Proračunavanja (Computed Pattern)** – rezultati čestih agregacija (ukupne emisije, zbir transfera) čuvaju se unapred, što značajno ubrzava složene upite i smanjuje opterećenje baze.  
+
+---
+## ⚡ Indeksi i optimizacija
+U datoteci *indices.txt* definisani su indeksi koji su uvedeni nakon što je analizom upita primećeno gde se javljaju **najčešća filtriranja i pretraživanja**:  
+
+- **Jednostavni indeksi**  
+  - `year` — zbog toga što većina upita sadrži vremenske filtere (npr. poređenje emisija kroz godine, analiza trenda). Indeks nad godinom omogućava da se upiti vremenskih serija izvršavaju znatno brže.  
+  - `facility.FacilityId` — jer se često filtrira po konkretnom postrojenju (npr. Top 10 postrojenja u državi ili trend za jedno postrojenje).  
+
+- **Složeni indeks**  
+  - `year + facility.Latitude + facility.Longitude` — omogućava efikasno grupisanje i poređenja emisija po geografiji, posebno kod upita o koncentraciji emisija u gradovima.  
+
+- **Unikatni indeks**  
+  - `DiseaseId` u kolekciji *Diseases* — uveden jer se bolesti često pretražuju unutar niza povezanih sa hemikalijama. Unikatan indeks garantuje jednoznačnost identifikatora bolesti i omogućava brza pretraživanja i spajanja sa hemikalijama.  
+
+Ovi indeksi su direktan odgovor na obrasce upotrebe podataka i ključni su za optimizaciju performansi.  
+
+---
 
 
 
@@ -391,6 +425,13 @@ Za datu godinu sabrati `TotalReleases` po gradu i izračunati:
 }
 ```
 
+## 📈 Poređenje performansi
+Pre merenja performansi sprovedena je analiza šeme i indeksa kako bi se obezbedila efikasnost upita:  
+- **Normalizacija vs denormalizacija** – izabran kompromis kroz proširene reference.  
+- **Preagregacije** – zahvaljujući šablonu proračunavanja, smanjen je broj teških runtime agregacija.  
+- **Indeksi** – upiti koji sadrže filtriranje po godini, postrojenju ili bolestima dobijaju višestruko ubrzanje.  
+
+📊 Na grafikonu (*upiti_vremena.png*) prikazano je uporedno vreme izvršavanja pre i posle optimizacije, pri čemu kombinacija šablona i indeksiranja dovodi do značajnog smanjenja latencije.  
 
 ![Uporedno vreme izvršavanja upita](upiti_vremena.png)
 
